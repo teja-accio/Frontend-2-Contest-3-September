@@ -1,150 +1,111 @@
-// Get a reference to the 'activeTimers' element in the HTML
-const activeTimers = document.getElementById('activeTimers');
-// Display the initial "You have no timers currently!" text
-displayNoTimersText();
-
-// Get a reference to the 'startTimer' button in the HTML
-const startTimerButton = document.getElementById('startTimer');
-// Initialize a flag to track whether a timer is currently active
-let isTimerActive = false;
-
-// Add a click event listener to the 'Start New Timer' button
-startTimerButton.addEventListener('click', () => {
-    // Parse the input values for hours, minutes, and seconds
-    const hours = parseInt(document.getElementById('hours').value) || 0;
-    const minutes = parseInt(document.getElementById('minutes').value) || 0;
-    const seconds = parseInt(document.getElementById('seconds').value) || 0;
-
-    // Calculate the total time in seconds
-    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
-
-    if (totalSeconds > 0) {
-        // Create a new timer with the specified total seconds
-        createTimer(totalSeconds);
-        // Set the flag to indicate an active timer
-        isTimerActive = true;
-        // Remove the "You have no timers currently!" text if it exists
-        removeNoTimersText();
-    } else {
-        alert("Please enter a valid time.");
-    }
+document.addEventListener("DOMContentLoaded", function () {
+  updateTimerDisplay("hh : mm : ss");
 });
 
-// Function to format time in HH:MM:SS format
-function formatTime(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return ${h.toString().padStart(2, '0')} hr : ${m.toString().padStart(2, '0')} min : ${s.toString().padStart(2, '0')} sec;
+function isValidInput(input) {
+  return /^\d+$/.test(input) && parseInt(input, 10) >= 0;
 }
 
-// Function to create a new timer with the specified total seconds
-function createTimer(totalSeconds) {
-    // Create a container for the timer
-    const timerContainer = document.createElement('div');
-    timerContainer.classList.add('timer-container');
+function startNewTimer() {
+  let hours = parseInt(prompt("Enter hours:", 0), 10);
+  let minutes = parseInt(prompt("Enter minutes:", 0), 10);
+  let seconds = parseInt(prompt("Enter seconds:", 0), 10);
+  if (
+    isValidInput(hours) != 0 &&
+    isValidInput(minutes) != 0 &&
+    isValidInput(seconds) != 0
+  ) {
+    let totalSeconds = hours * 3600 + minutes * 60 + seconds;
 
-    // Create an element to display "Time Left"
-    const timeLeftElement = document.createElement('div');
-    timeLeftElement.classList.add('time-left');
-    timeLeftElement.textContent = 'Time Left:';
+    updateTimerDisplay(formatTime(totalSeconds));
 
-    // Create an element to display the timer value
-    const timerElement = document.createElement('div');
-    timerElement.classList.add('timer');
+    let timerElement = document.createElement("div");
+    timerElement.classList.add("timer");
+    timerElement.innerHTML = `
+        <div class="card-text">Set Time :</div>
+        <div class="timer-display">${formatTime(totalSeconds)}</div>
+        <div class="btn"><button class="stop-btn" onclick="stopTimer(this)">Stop</button></d9v>
+        `;
 
-    // Create a container for timer control buttons
-    const timerControls = document.createElement('div');
-    timerControls.classList.add('timer-controls');
+    document.getElementById("active-timers").appendChild(timerElement);
 
-    // Create the 'Stop Timer' button
-    const stopButton = document.createElement('button');
-    stopButton.classList.add('control-button', 'stop-button');
-    stopButton.textContent = 'Stop Timer';
+    timerElement.intervalId = setInterval(function () {
+      if (totalSeconds <= 0) {
+        clearInterval(timerElement.intervalId);
+        timerElement.classList.add("timer-ended");
 
-    // Create the 'Delete' button
-    const deleteButton = document.createElement('button');
-    deleteButton.classList.add('control-button', 'delete-button');
-    deleteButton.textContent = 'Delete';
-    deleteButton.style.display = 'none'; // Initially, hide the delete button
-
-    let timerInterval;
-
-    // Function to update the timer display
-    function updateTimerDisplay() {
+        let stopButton = timerElement.querySelector(".stop-btn");
+        stopButton.classList.remove("stop-btn");
+        stopButton.classList.add("after-zero");
+        timerElement.innerHTML = `
+            <p class="after-zero-text">Timer Is Up !</p>
+            <div class="btn"><button class="after-zero" onclick="stopTimer(this)">Delete</button></div>
+        `;
+        playAudioAlert();
+      } else {
         totalSeconds--;
-        if (totalSeconds <= 0) {
-            clearInterval(timerInterval);
-            timerElement.classList.add('timer-ended');
-            timerElement.textContent = "Time is up!";
-            stopButton.style.display = 'none'; // Hide the Stop Timer button
-            deleteButton.style.display = 'inline'; // Show the delete button
-            timeLeftElement.style.display = 'none';
-            // Play an audio alert when Time is up!
-            playAudioAlert();
-        } else {
-            timerElement.textContent = formatTime(totalSeconds);
-        }
-    }
-
-    // Add a click event listener to the 'Stop Timer' button
-    stopButton.addEventListener('click', () => {
-        // Stop the timer and remove the timer container
-        clearInterval(timerInterval);
-        timerContainer.remove();
-        isTimerActive = false; // Reset the active timer flag
-        // Check if there are no timers, then display "You have no timers currently!" text
-        if (activeTimers.children.length === 0) {
-            displayNoTimersText();
-        }
-    });
-
-    // Add a click event listener to the 'Delete' button
-    deleteButton.addEventListener('click', () => {
-        // Remove the timer container
-        timerContainer.remove();
-        // Check if there are no timers, then display "You have no timers currently!" text
-        if (activeTimers.children.length === 0) {
-            displayNoTimersText();
-        }
-    });
-
-    // Start the timer interval
-    timerInterval = setInterval(updateTimerDisplay, 1000);
-
-    // Append timer control elements to the timer container
-    timerControls.appendChild(stopButton);
-    timerControls.appendChild(deleteButton);
-
-    // Append timer elements to the timer container
-    timerContainer.appendChild(timeLeftElement);
-    timerContainer.appendChild(timerElement);
-    timerContainer.appendChild(timerControls);
-
-    // Append the timer container to the 'activeTimers' element
-    activeTimers.appendChild(timerContainer);
+        timerElement.querySelector(".timer-display").innerText =
+          formatTime(totalSeconds);
+      }
+    }, 1000);
+  } else {
+    return;
+  }
 }
 
-// Function to display "You have no timers currently!" text
-function displayNoTimersText() {
-    const noTimersText = document.createElement('p');
-    noTimersText.classList.add('no-timers-text');
-    noTimersText.textContent = 'You have no timers currently!';
-    noTimersText.style.fontSize = "14px";
-    activeTimers.appendChild(noTimersText);
-}
-
-// Function to remove "You have no timers currently!" text
-function removeNoTimersText() {
-    // Find and remove the "You have no timers currently!" text
-    const noTimersText = activeTimers.querySelector('.no-timers-text');
-    if (noTimersText) {
-        noTimersText.remove();
-    }
-}
-
-// Function to play an audio alert
+const audioAlert = new Audio("Alarm 2.mp3");
 function playAudioAlert() {
-    const audio = new Audio('./alert.mp3'); // Replace with the path to your audio file
-    audio.play();
+  audioAlert.play();
+}
+
+function pauseAudioAlert() {
+  audioAlert.pause();
+}
+
+function updateTimerDisplay(timeString) {
+  document.getElementById("timer-display").innerText = timeString;
+}
+
+function stopTimer(button) {
+  let timerElement = button.parentElement;
+  clearInterval(timerElement.intervalId);
+  timerElement.parentElement.remove();
+  pauseAudioAlert();
+}
+
+function showActiveTimers() {
+  let activeTimersContainer = document.getElementById("active-timers");
+
+  activeTimersContainer.innerHTML = "";
+
+  let activeTimerElements = document.querySelectorAll(".timer");
+
+  if (activeTimerElements.length === 0) {
+    activeTimersContainer.innerHTML = "<p>No active timers.</p>";
+    return;
+  }
+
+  activeTimerElements.forEach((timerElement, index) => {
+    let timerDisplay = timerElement.querySelector(".timer-display").innerText;
+
+    let timerInfo = document.createElement("div");
+    timerInfo.classList.add("timer-info");
+    timerInfo.innerHTML = `
+            <p><strong>Timer ${index + 1}:</strong> ${timerDisplay}</p>
+        `;
+
+    activeTimersContainer.appendChild(timerInfo);
+  });
+}
+
+function formatTime(totalSeconds) {
+  let hours = Math.floor(totalSeconds / 3600);
+  let minutes = Math.floor((totalSeconds % 3600) / 60);
+  let seconds = totalSeconds % 60;
+
+  return `${padZero(hours)} : ${padZero(minutes)} : ${padZero(seconds)}`;
+}
+
+function padZero(number) {
+  return number < 10 ? "0" + number : number;
 }
